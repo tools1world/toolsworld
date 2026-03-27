@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Professional Image Resizer | Tools Wonder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            min-height: 100vh;
+        }
+
+        /* Glassmorphism Effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+
+        .custom-input {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .custom-input:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #3b82f6;
+            ring: 2px rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <header class="p-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-2xl font-bold text-blue-700 tracking-tight">
+                Tools <span class="text-blue-400 font-light">Wonder</span>
+            </div>
+            <a href="index.html" class="text-sm font-semibold text-blue-600 hover:text-blue-800 transition flex items-center gap-2">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-6">
+        <div class="glass-card rounded-3xl p-8 md:p-10 max-w-2xl w-full">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-slate-800 mb-2">Image Resizer</h1>
+                <p class="text-slate-500 font-light">Professional-grade resizing with aspect ratio control.</p>
+            </div>
+
+            <div class="mb-8">
+                <label for="upload" class="cursor-pointer group">
+                    <div class="border-2 border-dashed border-blue-300 rounded-2xl p-8 text-center group-hover:bg-blue-50/50 transition">
+                        <i class="fas fa-expand text-3xl text-blue-500 mb-3 group-hover:scale-110 transition duration-300"></i>
+                        <p class="text-slate-600 font-medium" id="fileName">Select an image to resize</p>
+                        <input type="file" id="upload" accept="image/*" class="hidden" />
+                    </div>
+                </label>
+            </div>
+
+            <div id="resizeControls" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Width (px)</label>
+                    <input type="number" id="width" class="custom-input w-full p-3 rounded-xl focus:outline-none" placeholder="1920">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Height (px)</label>
+                    <input type="number" id="height" class="custom-input w-full p-3 rounded-xl focus:outline-none" placeholder="1080">
+                </div>
+                
+                <div class="md:col-span-2 flex items-center justify-center gap-2 py-2">
+                    <input type="checkbox" id="maintainAspect" checked class="w-4 h-4 text-blue-600 rounded">
+                    <label for="maintainAspect" class="text-sm text-slate-600 cursor-pointer">Lock Aspect Ratio</label>
+                </div>
+
+                <button onclick="resizeImage()" class="md:col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95">
+                    <i class="fas fa-compress-alt mr-2"></i> Apply Resize
+                </button>
+            </div>
+
+            <div id="resultArea" class="mt-8 hidden border-t border-white/40 pt-8 text-center">
+                <div class="rounded-xl overflow-hidden shadow-inner bg-slate-200/50 mb-6 p-2">
+                    <canvas id="canvas" class="max-w-full h-auto mx-auto rounded-lg"></canvas>
+                </div>
+                <a id="downloadLink" download="resized-tools-wonder.png" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-black text-white px-8 py-3 rounded-xl font-bold transition">
+                    <i class="fas fa-download"></i> Download Image
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="p-8 text-center text-slate-500 text-xs font-medium">
+        SECURE & LOCAL PROCESSING • TOOLS WONDER 2026
+    </footer>
+
+    <script>
+        let originalImage = new Image();
+        let aspectRatio = 1;
+
+        const upload = document.getElementById('upload');
+        const widthInput = document.getElementById('width');
+        const heightInput = document.getElementById('height');
+        const maintainAspect = document.getElementById('maintainAspect');
+        const controls = document.getElementById('resizeControls');
+        const resultArea = document.getElementById('resultArea');
+
+        upload.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').innerText = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                originalImage.onload = function() {
+                    widthInput.value = originalImage.width;
+                    heightInput.value = originalImage.height;
+                    aspectRatio = originalImage.width / originalImage.height;
+                    controls.classList.remove('hidden');
+                };
+                originalImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Aspect Ratio Logic
+        widthInput.addEventListener('input', () => {
+            if (maintainAspect.checked) {
+                heightInput.value = Math.round(widthInput.value / aspectRatio);
+            }
+        });
+
+        heightInput.addEventListener('input', () => {
+            if (maintainAspect.checked) {
+                widthInput.value = Math.round(heightInput.value * aspectRatio);
+            }
+        });
+
+        function resizeImage() {
+            const width = parseInt(widthInput.value);
+            const height = parseInt(heightInput.value);
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (!width || !height) return alert("Please set dimensions!");
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(originalImage, 0, 0, width, height);
+
+            const downloadLink = document.getElementById('downloadLink');
+            downloadLink.href = canvas.toDataURL('image/png');
+            resultArea.classList.remove('hidden');
+            resultArea.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
