@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Compressor | Tools Wonder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-shadow { box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1); }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px; width: 18px;
+            border-radius: 50%; background: #2563eb;
+            cursor: pointer; margin-top: -6px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+
+    <header class="bg-white border-b border-slate-200 py-4 px-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-xl font-bold text-blue-600">Tools <span class="text-slate-400 font-normal">Wonder</span></div>
+            <nav class="hidden md:block">
+                <a href="index.html" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition">Back to Tools</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white custom-shadow rounded-2xl p-8 max-w-xl w-full border border-blue-50">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-50 text-blue-600 rounded-full mb-4">
+                    <i class="fas fa-compress-arrows-alt text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-800">Image Compressor</h1>
+                <p class="text-slate-500 text-sm">Reduce image file size without losing significant quality.</p>
+            </div>
+
+            <div id="uploadSection" class="space-y-6">
+                <div class="relative group">
+                    <input type="file" id="upload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                    <div class="border-2 border-dashed border-blue-200 group-hover:border-blue-400 rounded-xl p-10 text-center transition bg-blue-50/30">
+                        <i class="fas fa-file-image text-4xl text-blue-300 mb-3"></i>
+                        <p class="text-slate-600 font-medium" id="fileName">Select an image to compress</p>
+                        <p class="text-xs text-slate-400 mt-1">Supports JPG, PNG, WebP</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="controls" class="mt-8 space-y-6 hidden animate-fade-in">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="text-sm font-bold text-slate-700">Compression Level: <span id="qualityVal" class="text-blue-600">70%</span></label>
+                        <span id="sizeInfo" class="text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200"></span>
+                    </div>
+                    <input type="range" id="quality" min="10" max="100" value="70" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-2 px-1">
+                        <span>Smallest Size</span>
+                        <span>Best Quality</span>
+                    </div>
+                </div>
+
+                <div class="rounded-xl overflow-hidden border border-slate-200 max-h-48 flex items-center justify-center bg-slate-100">
+                    <img id="preview" src="" alt="Preview" class="max-h-full" />
+                </div>
+
+                <button id="compressBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
+                    <i class="fas fa-bolt"></i>
+                    Compress & Download
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-6 text-center text-slate-400 text-xs">
+        <p>Your images are processed locally in your browser and never touch our servers.</p>
+        <p class="mt-2 font-medium">toolsworld0380@gmail.com</p>
+    </footer>
+
+    <script>
+        const upload = document.getElementById('upload');
+        const preview = document.getElementById('preview');
+        const compressBtn = document.getElementById('compressBtn');
+        const qualitySlider = document.getElementById('quality');
+        const qualityVal = document.getElementById('qualityVal');
+        const fileName = document.getElementById('fileName');
+        const controls = document.getElementById('controls');
+        const sizeInfo = document.getElementById('sizeInfo');
+
+        let originalFile;
+
+        upload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                originalFile = file;
+                const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
+                fileName.innerText = file.name;
+                sizeInfo.innerText = `Original: ${sizeInMb} MB`;
+                
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    preview.src = event.target.result;
+                    controls.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        qualitySlider.addEventListener('input', (e) => {
+            qualityVal.innerText = `${e.target.value}%`;
+        });
+
+        compressBtn.addEventListener('click', () => {
+            if (!originalFile) return;
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.src = preview.src;
+
+            img.onload = () => {
+                // Quality math
+                const quality = qualitySlider.value / 100;
+                
+                // Set canvas size same as original
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                canvas.toBlob((blob) => {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `compressed-${originalFile.name}`;
+                    link.click();
+                }, 'image/jpeg', quality);
+            };
+        });
+    </script>
+</body>
+</html>
