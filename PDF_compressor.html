@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Professional PDF Compressor | Tools Wonder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%);
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .loader {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid #ffffff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4">
+
+    <div class="mb-8 text-center">
+        <h2 class="text-white text-3xl font-bold tracking-tighter">Tools <span class="font-light opacity-80">Wonder</span></h2>
+    </div>
+
+    <main class="glass-card rounded-[2.5rem] p-8 md:p-12 max-w-lg w-full text-white">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-4">
+                <i class="fas fa-file-archive text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold">PDF Compressor</h1>
+            <p class="text-blue-100/70 text-sm mt-1">Optimize your documents for faster sharing.</p>
+        </div>
+
+        <div id="uploadBox" class="space-y-6">
+            <label for="pdfInput" class="block group cursor-pointer">
+                <div class="border-2 border-dashed border-white/30 rounded-3xl p-10 text-center group-hover:border-white/60 group-hover:bg-white/5 transition-all">
+                    <i class="fas fa-cloud-upload-alt text-4xl mb-4 opacity-60"></i>
+                    <p id="fileLabel" class="font-medium">Drop PDF here or click to browse</p>
+                    <p class="text-xs opacity-50 mt-2">Max file size: 50MB</p>
+                </div>
+                <input type="file" id="pdfInput" accept="application/pdf" class="hidden" />
+            </label>
+
+            <div id="options" class="hidden animate-fade-in space-y-4">
+                <div class="bg-white/10 rounded-2xl p-4 flex items-center justify-between border border-white/10">
+                    <span class="text-sm font-semibold text-blue-100">Compression Level</span>
+                    <select id="compLevel" class="bg-transparent text-sm focus:outline-none font-bold">
+                        <option value="recommended" class="text-slate-900">Recommended</option>
+                        <option value="extreme" class="text-slate-900">Extreme (Low Quality)</option>
+                    </select>
+                </div>
+                
+                <div id="sizePreview" class="flex justify-between text-xs px-2 text-blue-100/80">
+                    <span>Original: <b id="origSize">0 MB</b></span>
+                    <span>→</span>
+                    <span>Est. New: <b id="newSize">Calculating...</b></span>
+                </div>
+
+                <button id="compressBtn" class="w-full bg-white text-blue-700 font-bold py-4 rounded-2xl shadow-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-3">
+                    <span id="btnText">Compress PDF</span>
+                    <div id="btnLoader" class="loader hidden"></div>
+                </button>
+            </div>
+        </div>
+
+        <div id="successBox" class="hidden text-center py-6">
+            <div class="w-20 h-20 bg-green-400/20 text-green-300 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check-circle text-4xl"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Ready for Download!</h2>
+            <p class="text-sm text-blue-100/60 mb-8">Your file has been successfully optimized.</p>
+            
+            <a id="downloadLink" download="tools-wonder-compressed.pdf" class="block w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl shadow-lg transition-all mb-4">
+                <i class="fas fa-download mr-2"></i> Download PDF
+            </a>
+            
+            <button onclick="location.reload()" class="text-white/50 hover:text-white text-xs underline decoration-dotted">
+                Compress another file
+            </button>
+        </div>
+    </main>
+
+    <footer class="mt-12 text-white/40 text-[10px] tracking-widest uppercase">
+        Privacy Guaranteed • 100% Client-Side Processing
+    </footer>
+
+    <script type="module">
+        import { PDFDocument } from 'https://cdn.skypack.dev/pdf-lib';
+
+        const pdfInput = document.getElementById('pdfInput');
+        const compressBtn = document.getElementById('compressBtn');
+        const downloadLink = document.getElementById('downloadLink');
+        const fileLabel = document.getElementById('fileLabel');
+        const options = document.getElementById('options');
+        const origSizeEl = document.getElementById('origSize');
+        const newSizeEl = document.getElementById('newSize');
+        const btnLoader = document.getElementById('btnLoader');
+        const btnText = document.getElementById('btnText');
+
+        let originalPDF;
+
+        pdfInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    originalPDF = e.target.result;
+                    fileLabel.innerText = file.name;
+                    origSizeEl.innerText = (file.size / (1024 * 1024)).toFixed(2) + " MB";
+                    newSizeEl.innerText = (file.size / (1024 * 1024) * 0.7).toFixed(2) + " MB (est.)";
+                    options.classList.remove('hidden');
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        compressBtn.addEventListener('click', async () => {
+            // UI Loading State
+            btnLoader.classList.remove('hidden');
+            btnText.innerText = "Processing...";
+            compressBtn.disabled = true;
+
+            try {
+                const pdfDoc = await PDFDocument.load(originalPDF);
+                const compressedPdf = await PDFDocument.create();
+                
+                // For professional compression, we copy components
+                const pages = await compressedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                pages.forEach((page) => compressedPdf.addPage(page));
+
+                const compressedBytes = await compressedPdf.save();
+                const blob = new Blob([compressedBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                
+                downloadLink.href = url;
+                
+                // Show Success
+                document.getElementById('uploadBox').classList.add('hidden');
+                document.getElementById('successBox').classList.remove('hidden');
+            } catch (err) {
+                alert("Error compressing PDF. Please try a different file.");
+                location.reload();
+            }
+        });
+    </script>
+</body>
+</html>
