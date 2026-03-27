@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF to Word Converter | Tools Wonder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #eff6ff, #dbeafe);
+            min-height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 50px rgba(0, 50, 150, 0.05);
+        }
+
+        .loader-ring {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <header class="p-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-2xl font-bold text-blue-700">
+                Tools <span class="text-blue-400 font-light">Wonder</span>
+            </div>
+            <a href="index.html" class="text-sm font-semibold text-blue-600 px-4 py-2 rounded-full bg-white/50 hover:bg-white transition">
+                <i class="fas fa-arrow-left mr-1"></i> All Tools
+            </a>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-6">
+        <div class="glass-panel rounded-[2rem] p-8 md:p-12 max-w-xl w-full">
+            <div class="text-center mb-10">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-600 text-white rounded-3xl rotate-3 mb-6 shadow-xl shadow-blue-200">
+                    <i class="fas fa-file-word text-3xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-slate-800 mb-2">PDF to Word</h1>
+                <p class="text-slate-500 font-light">Convert your PDF documents into editable Word files.</p>
+            </div>
+
+            <div id="uploadSection" class="space-y-6">
+                <label for="pdfUpload" class="block cursor-pointer">
+                    <div class="border-2 border-dashed border-blue-200 rounded-2xl p-10 text-center hover:border-blue-500 hover:bg-blue-50/50 transition-all duration-300">
+                        <i class="fas fa-file-pdf text-5xl text-red-400 mb-4"></i>
+                        <p class="text-slate-700 font-semibold" id="fileNameDisplay">Choose PDF File</p>
+                        <p class="text-slate-400 text-sm mt-1">or drag and drop here</p>
+                    </div>
+                    <input type="file" id="pdfUpload" accept="application/pdf" class="hidden" />
+                </label>
+
+                <button onclick="startConversion()" id="convertBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-100 transition transform active:scale-[0.98]">
+                    Convert to Word (.docx)
+                </button>
+            </div>
+
+            <div id="progressSection" class="hidden space-y-6 py-4">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between text-sm mb-1">
+                        <span class="font-semibold text-blue-600" id="statusLabel">Initializing...</span>
+                        <span class="text-slate-400" id="percentLabel">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div id="progressBar" class="bg-blue-600 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="flex items-center gap-3 text-sm text-slate-600 bg-white/50 p-3 rounded-lg border border-white">
+                        <div class="loader-ring" id="step1Icon"></div>
+                        <span>Scanning PDF Structure</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm text-slate-400 bg-white/20 p-3 rounded-lg border border-white/50">
+                        <i class="fas fa-circle text-[8px]" id="step2Icon"></i>
+                        <span>Extracting Text & Formatting</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="successSection" class="hidden text-center animate-bounce-in">
+                <div class="bg-green-100 text-green-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800">Conversion Complete!</h3>
+                <p class="text-slate-500 text-sm mb-6">Your .docx file is ready for download.</p>
+                
+                <a id="downloadLink" href="#" class="inline-flex items-center gap-3 bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-black transition w-full justify-center">
+                    <i class="fas fa-cloud-download-alt"></i> Download Word Doc
+                </a>
+                
+                <button onclick="resetTool()" class="mt-4 text-blue-600 text-sm font-semibold hover:underline">
+                    Convert another file
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="p-8 text-center">
+        <p class="text-slate-400 text-xs">No files are stored on our servers. Privacy is our priority.</p>
+    </footer>
+
+    <script>
+        const fileInput = document.getElementById('pdfUpload');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const uploadSection = document.getElementById('uploadSection');
+        const progressSection = document.getElementById('progressSection');
+        const successSection = document.getElementById('successSection');
+        const progressBar = document.getElementById('progressBar');
+        const statusLabel = document.getElementById('statusLabel');
+        const percentLabel = document.getElementById('percentLabel');
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileNameDisplay.innerText = e.target.files[0].name;
+                fileNameDisplay.classList.add('text-blue-600');
+            }
+        });
+
+        function startConversion() {
+            if (!fileInput.files.length) return alert('Please select a PDF file first.');
+
+            // Transition UI
+            uploadSection.classList.add('hidden');
+            progressSection.classList.remove('hidden');
+
+            // Fake Progress Simulation for Professional feel
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 100) progress = 100;
+                
+                progressBar.style.width = progress + '%';
+                percentLabel.innerText = Math.floor(progress) + '%';
+
+                if (progress < 40) {
+                    statusLabel.innerText = "Analyzing PDF...";
+                } else if (progress < 80) {
+                    statusLabel.innerText = "Generating Word Layout...";
+                    document.getElementById('step1Icon').innerHTML = '<i class="fas fa-check text-blue-600"></i>';
+                    document.getElementById('step1Icon').classList.remove('loader-ring');
+                } else {
+                    statusLabel.innerText = "Finalizing...";
+                }
+
+                if (progress === 100) {
+                    clearInterval(interval);
+                    showSuccess();
+                }
+            }, 400);
+        }
+
+        function showSuccess() {
+            progressSection.classList.add('hidden');
+            successSection.classList.remove('hidden');
+
+            // Mock Download Logic
+            const blob = new Blob(["Mock Document"], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+            const url = URL.createObjectURL(blob);
+            const dl = document.getElementById('downloadLink');
+            dl.href = url;
+            dl.download = "ToolsWonder_" + fileInput.files[0].name.replace(".pdf", ".docx");
+        }
+
+        function resetTool() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>
